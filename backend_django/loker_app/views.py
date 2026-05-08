@@ -143,7 +143,11 @@ class InferensiAPIView(APIView):
         seq_job = pad_sequences(tokenizer.texts_to_sequences(semua_teks_lowongan), maxlen=MAX_LEN, padding='post')
 
         # 6. Prediksi (Mendapatkan probabilitas)
-        skor_prediksi = model.predict([seq_cv, seq_job]).flatten()
+        skor_prediksi = model.predict(
+            [seq_cv, seq_job],
+            batch_size=8,
+            verbose=0
+        ).flatten()
 
         # 7. Urutkan skor dan ambil Top 20 Index
         # argsort() mengurutkan dari kecil ke besar, [::-1] membaliknya, [:20] mengambil 20 teratas
