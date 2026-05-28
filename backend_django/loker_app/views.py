@@ -36,6 +36,26 @@ GLOBAL_LOKER_DATA = []
 GLOBAL_SEQ_JOB = None
 GLOBAL_TFIDF_MATRIX_JOB = None
 
+def manual_pad_sequences(sequences, maxlen, padding='post', value=0):
+    hasil = np.full((len(sequences), maxlen), value, dtype=np.int32)
+    
+    for i, seq in enumerate(sequences):
+        if len(seq) == 0:
+            continue
+            
+        # Potong (truncate) jika panjang urutan melebihi batas maxlen
+        if len(seq) > maxlen:
+            seq = seq[:maxlen] # Potong bagian belakang
+            
+        # Masukkan angka ke dalam matriks sesuai jenis padding
+        if padding == 'post':
+            # Padding di belakang (angka diisi dari depan)
+            hasil[i, :len(seq)] = seq
+        else:
+            # Padding di depan (angka diisi di belakang)
+            hasil[i, -len(seq):] = seq
+    return hasil
+
 def init_system():
     global ort_session, input_name_cv, input_name_job, output_name
     global tokenizer, tfidf_vectorizer
@@ -79,7 +99,7 @@ def init_system():
             daftar_judul.append(loker.judul or "")
 
         # Pre-compute & pastikan formatnya np.float32 (Kewajiban ONNX)
-        GLOBAL_SEQ_JOB = pad_sequences(tokenizer.texts_to_sequences(semua_teks_lowongan), maxlen=MAX_LEN, padding='post').astype(np.float32)
+        GLOBAL_SEQ_JOB = manual_pad_sequences(tokenizer.texts_to_sequences(semua_teks_lowongan), maxlen=MAX_LEN, padding='post').astype(np.float32)
         GLOBAL_TFIDF_MATRIX_JOB = tfidf_vectorizer.transform(daftar_judul)
 
         print(f"✅ Sistem ONNX siap! {len(GLOBAL_LOKER_DATA)} lowongan telah di-cache.")
