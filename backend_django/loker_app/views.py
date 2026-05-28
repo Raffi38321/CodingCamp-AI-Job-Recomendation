@@ -152,7 +152,7 @@ class InferensiAPIView(APIView):
         jumlah_lowongan = len(GLOBAL_LOKER_DATA)
 
         # 1. Proses CV User
-        seq_cv = pad_sequences(tokenizer.texts_to_sequences([text_cv_user]), maxlen=MAX_LEN, padding='post').astype(np.float32)
+        seq_cv = manual_pad_sequences(tokenizer.texts_to_sequences([text_cv_user]), maxlen=MAX_LEN, padding='post').astype(np.float32)
         seq_cv_batch = np.repeat(seq_cv, jumlah_lowongan, axis=0)
         tfidf_cv = tfidf_vectorizer.transform([text_cv_title])
 
