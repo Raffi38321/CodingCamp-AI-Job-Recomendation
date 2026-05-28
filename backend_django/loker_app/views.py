@@ -126,7 +126,7 @@ def init_system():
             daftar_judul.append(loker.judul or "")
 
         # Pre-compute & pastikan formatnya np.float32 (Kewajiban ONNX)
-        GLOBAL_SEQ_JOB = manual_pad_sequences(tokenizer.texts_to_sequences(semua_teks_lowongan), maxlen=MAX_LEN, padding='post').astype(np.float32)
+        GLOBAL_SEQ_JOB = manual_pad_sequences(manual_texts_to_sequences(semua_teks_lowongan, tokenizer, oov_token_id), maxlen=MAX_LEN, padding='post').astype(np.float32)
         GLOBAL_TFIDF_MATRIX_JOB = tfidf_vectorizer.transform(daftar_judul)
 
         print(f"✅ Sistem ONNX siap! {len(GLOBAL_LOKER_DATA)} lowongan telah di-cache.")
