@@ -12,7 +12,7 @@ from rest_framework import serializers
 
 # Menggunakan ONNX Runtime (Gudang komputasi ringan kita)
 import onnxruntime as ort
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+# from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.metrics.pairwise import cosine_similarity
 
 from .models import Loker
