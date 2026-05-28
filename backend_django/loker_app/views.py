@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import time
+import json
 
 from django.conf import settings
 from rest_framework.views import APIView
@@ -36,6 +37,28 @@ GLOBAL_LOKER_DATA = []
 GLOBAL_SEQ_JOB = None
 GLOBAL_TFIDF_MATRIX_JOB = None
 
+def manual_texts_to_sequences(texts, word_index, oov_token_id):
+    """
+    Pengganti fungsi texts_to_sequences milik Keras.
+    Murni menggunakan Python, 0% Keras.
+    """
+    # Filter bawaan Keras yang dihapus saat tokenisasi
+    filters = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+    translate_map = str.maketrans(filters, ' ' * len(filters))
+    
+    sequences = []
+    for text in texts:
+        # Ubah huruf kecil dan hilangkan tanda baca
+        text = text.lower().translate(translate_map)
+        seq = []
+        for word in text.split():
+            if word in word_index:
+                seq.append(word_index[word])
+            elif oov_token_id is not None:
+                seq.append(oov_token_id)
+        sequences.append(seq)
+    return sequences
+
 def manual_pad_sequences(sequences, maxlen, padding='post', value=0):
     hasil = np.full((len(sequences), maxlen), value, dtype=np.int32)
     
@@ -60,9 +83,10 @@ def init_system():
     global ort_session, input_name_cv, input_name_job, output_name
     global tokenizer, tfidf_vectorizer
     global GLOBAL_LOKER_DATA, GLOBAL_SEQ_JOB, GLOBAL_TFIDF_MATRIX_JOB
+    global oov_token_id
     
     ONNX_PATH = os.path.join(settings.BASE_DIR, './../model_hasil/model_rekomendasi_3.onnx')
-    TOKENIZER_PATH = os.path.join(settings.BASE_DIR, './../model_hasil/tokenizer_loker3.pkl')
+    TOKENIZER_PATH = os.path.join(settings.BASE_DIR, './../model_hasil/tokenizer_dict3.json')
     TFIDF_PATH = os.path.join(settings.BASE_DIR, './../model_hasil/tfidf_fitted.pkl')
 
     print("🚀 Memulai inisialisasi sistem ML (ONNX) dan Caching Database...")
@@ -78,7 +102,10 @@ def init_system():
 
         # Load Pickle
         with open(TOKENIZER_PATH, 'rb') as f:
-            tokenizer = pickle.load(f)
+            tokenizer_data = json.load(f)
+        tokenizer = tokenizer_data['word_index']
+        oov_token_id = tokenizer.get(tokenizer_data.get('oov_token'))
+        
         with open(TFIDF_PATH, 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
 
