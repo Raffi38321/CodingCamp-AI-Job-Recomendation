@@ -92,8 +92,13 @@ def init_system():
     print("🚀 Memulai inisialisasi sistem ML (ONNX) dan Caching Database...")
     
     try:
+        sess_options = ort.SessionOptions()
+        sess_options.intra_op_num_threads = 1
+        sess_options.inter_op_num_threads = 1
+        
+        
         # Load ONNX Session
-        ort_session = ort.InferenceSession(ONNX_PATH)
+        ort_session = ort.InferenceSession(str(ONNX_PATH), sess_options)
         
         # Ambil nama input secara otomatis dari model ONNX
         input_name_cv = ort_session.get_inputs()[0].name
