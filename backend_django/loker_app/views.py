@@ -37,7 +37,7 @@ GLOBAL_LOKER_DATA = []
 GLOBAL_SEQ_JOB = None
 GLOBAL_TFIDF_MATRIX_JOB = None
 
-def manual_texts_to_sequences(texts, word_index, oov_token_id):
+def manual_texts_to_sequences(texts, word_index, oov_token_id, max_vocab_size=12000):
     """
     Pengganti fungsi texts_to_sequences milik Keras.
     Murni menggunakan Python, 0% Keras.
@@ -53,8 +53,14 @@ def manual_texts_to_sequences(texts, word_index, oov_token_id):
         seq = []
         for word in text.split():
             if word in word_index:
-                seq.append(word_index[word])
-            elif oov_token_id is not None:
+                idx = word_index[word]
+                # CEK BATAS: Hanya masukkan kata jika ID-nya masuk dalam kapasitas model
+                if idx < max_vocab_size:
+                    seq.append(idx)
+                # Jika ID melebihi batas, anggap sebagai kata tidak dikenal (OOV)
+                elif oov_token_id is not None and oov_token_id < max_vocab_size:
+                    seq.append(oov_token_id)
+            elif oov_token_id is not None and oov_token_id < max_vocab_size:
                 seq.append(oov_token_id)
         sequences.append(seq)
     return sequences
