@@ -184,18 +184,33 @@ class InferensiAPIView(APIView):
         jumlah_lowongan = len(GLOBAL_LOKER_DATA)
 
         # 1. Proses CV User
-        seq_cv = manual_pad_sequences(manual_texts_to_sequences([text_cv_user], tokenizer, oov_token_id), maxlen=MAX_LEN, padding='post').astype(np.float32)
+        sequence_mentah_cv = manual_texts_to_sequences([text_cv_user], tokenizer, oov_token_id)
+        seq_cv = manual_pad_sequences(sequence_mentah_cv, maxlen=MAX_LEN, padding='post').astype(np.float32)
         seq_cv_batch = np.repeat(seq_cv, jumlah_lowongan, axis=0)
+        
         tfidf_cv = tfidf_vectorizer.transform([text_cv_title])
 
-        # 2. Prediksi Menggunakan ONNX (Sangat bersih dan rapi)
-        ort_inputs = {
-            input_name_cv: seq_cv_batch,
-            input_name_job: GLOBAL_SEQ_JOB
-        }
+        BATCH_SIZE = 128  
+        prediksi_onnx_list = []
         
-        # Eksekusi!
-        prediksi_onnx = ort_session.run([output_name], ort_inputs)[0].flatten()
+        # Looping memotong data menjadi kelompok-kelompok kecil
+        for i in range(0, jumlah_lowongan, BATCH_SIZE):
+            batas_akhir = min(i + BATCH_SIZE, jumlah_lowongan)
+            
+            # Ambil potongan matriks sesuai ukuran batch
+            batch_seq_job = GLOBAL_SEQ_JOB[i:batas_akhir]
+            batch_seq_cv = seq_cv_batch[i:batas_akhir]
+            
+            ort_inputs_batch = {
+                input_name_cv: batch_seq_cv,
+                input_name_job: batch_seq_job
+            }
+            
+            # Prediksi hanya untuk 128 data, lalu simpan hasilnya
+            batch_pred = ort_session.run([output_name], ort_inputs_batch)[0].flatten()
+            prediksi_onnx_list.extend(batch_pred)
+        
+        prediksi_onnx = np.array(prediksi_onnx_list)
 
         # 3. Prediksi TF-IDF
         skor_tfidf = cosine_similarity(tfidf_cv, GLOBAL_TFIDF_MATRIX_JOB).flatten()
